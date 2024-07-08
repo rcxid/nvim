@@ -1,0 +1,17 @@
+[package]
+name = "nvim-lib"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+mlua = { workspace = true }
+
+[workspace]
+resolver = "2"
+members = ["comment"]
+
+[workspace.dependencies]
+mlua = { version = "0.9.9", features = ["luajit", "module"] }
