@@ -92,6 +92,7 @@ dependencies = [
 name = "nvim-lib"
 version = "0.1.0"
 dependencies = [
+ "comment",
  "mlua",
 ]
 

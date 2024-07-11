@@ -8,6 +8,8 @@ fn hello(_: &Lua, name: String) -> LuaResult<()> {
 #[mlua::lua_module]
 fn nvim_lib(lua: &Lua) -> LuaResult<LuaTable> {
     let exports = lua.create_table()?;
+    let comment = comment::lib(lua)?;
+    exports.set("comment", comment)?;
     exports.set("hello", lua.create_function(hello)?)?;
     Ok(exports)
 }

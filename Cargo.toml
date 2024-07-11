@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 mlua = { workspace = true }
+comment = { path = "./comment" }
 
 [workspace]
 resolver = "2"
