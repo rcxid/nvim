@@ -2,3 +2,4 @@
 .idea
 .vscode
 /lua/*.so
+/lua/*.dll
