@@ -1,3 +1,5 @@
+require("config.lazy")
+
 local initLib = false
 local osName = os.getenv("os")
 if osName == nil then
@@ -11,5 +13,4 @@ end
 
 if initLib then
   require("comment").setup()
-  print("init finished")
 end
