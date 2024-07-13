@@ -1,6 +1,4 @@
-if vim.g.loaded_comment then
-  return
-end
+local config = require("comment.config")
 
 local status_ok, nvim_lib = pcall(require, "nvim_lib")
 if not status_ok then
@@ -32,21 +30,9 @@ local function visual_selection_range()
   end
 end
 
--- default comment config
-M.config = {
-  comment_strings = {
-    c = "//",
-    cpp = "//",
-    lua = "--",
-    rust = "//",
-    sql = "--",
-    sh = "#",
-  }
-}
-
 function M.get_comment_string()
   local filetype = vim.bo.filetype
-  return M.config["comment_strings"][filetype]
+  return config.default.comment_strings[filetype]
 end
 
 function M.comment_toggle()
@@ -104,7 +90,5 @@ function M.setup(config)
 
   set_keymap()
 end
-
-vim.g.loaded_comment = true
 
 return M
