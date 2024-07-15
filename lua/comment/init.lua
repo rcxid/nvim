@@ -62,12 +62,12 @@ local function set_keymap()
     noremap = true,
     silent = true,
   }
-  vim.api.nvim_set_keymap(
-    "n",
-    "<C-g>",
-    ":lua require('comment').comment_toggle()<CR>",
-    option
-  )
+--   vim.api.nvim_set_keymap(
+--     "n",
+--     "<C-g>",
+--     ":lua require('comment').comment_toggle()<CR>",
+--     option
+--   )
   vim.api.nvim_set_keymap(
     "v",
     "<C-g>",

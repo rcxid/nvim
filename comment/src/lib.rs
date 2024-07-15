@@ -1,32 +1,54 @@
 use mlua::prelude::*;
+use nvim_oxi::api::opts::SetKeymapOpts;
+use nvim_oxi::api::types::Mode;
+
+mod config;
 
 /// comment lib
-pub fn lib(lua: &Lua) -> LuaResult<LuaTable> {
+pub fn lib(lua: &Lua) -> LuaResult<(String, LuaTable)> {
+    let lib_name = "comment".to_string();
     let comment = lua.create_table()?;
-    comment.set(
-        "comment_toggle_line",
-        lua.create_function(comment_line_toggle)?,
-    )?;
     comment.set(
         "comment_toggle_multiline",
         lua.create_function(comment_toggle_multiline)?,
     )?;
-    Ok(comment)
+    let comment_line_func_name = "comment_line_toggle";
+    comment.set(comment_line_func_name, lua.create_function(comment_line_toggle_export)?)?;
+    let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
+    nvim_oxi::api::set_keymap(
+        Mode::Normal,
+        "<C-g>",
+        format!(r#":lua require("nvim_lib").{}.{}()<CR>"#, lib_name, comment_line_func_name).as_str(),
+        &opts,
+    ).unwrap();
+    Ok((lib_name, comment))
+}
+
+/// comment one line toggle call by nvim
+fn comment_line_toggle_export(lua: &Lua, (): ()) -> LuaResult<()> {
+    if let Ok(current_line) = nvim_oxi::api::get_current_line() {
+        let filetype: String = lua.load("vim.bo.filetype").eval()?;
+        if let Some(comment_string) = config::comment_string(filetype) {
+            let output = comment_line_toggle(comment_string.as_str(), current_line)?;
+            let _ = nvim_oxi::api::set_current_line(output);
+        }
+    }
+    Ok(())
 }
 
 /// comment one line toggle
-fn comment_line_toggle(_: &Lua, (comment_string, content): (String, String)) -> LuaResult<String> {
+fn comment_line_toggle(comment_string: &str, content: String) -> LuaResult<String> {
     let content_trim_start = content.trim_start();
-    let output = if content_trim_start.starts_with(comment_string.as_str()) {
+    let output = if content_trim_start.starts_with(comment_string) {
         let pat_with_space = format!("{} ", comment_string);
         if content_trim_start.starts_with(pat_with_space.as_str()) {
             content.replacen(pat_with_space.as_str(), "", 1)
         } else {
-            content.replacen(comment_string.as_str(), "", 1)
+            content.replacen(comment_string, "", 1)
         }
     } else {
         let index = content.find(|c: char| c != ' ').unwrap_or(content.len());
-        comment_line(comment_string.as_str(), content, index)
+        comment_line(comment_string, content, index)
     };
     Ok(output)
 }
@@ -104,6 +126,5 @@ fn comment_toggle_multiline<'a>(
 #[cfg(test)]
 mod tests {
     #[test]
-    fn comment_line_toggle_works() {
-    }
+    fn comment_line_toggle_works() {}
 }

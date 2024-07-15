@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cargo build --release > /dev/null 2>&1
+# > /dev/null 2>&1
+cargo build --release
 rm -rf lua/*.so
 
 os_type=$(uname -s)

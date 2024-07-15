@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 mlua = { workspace = true }
+nvim-oxi = { workspace = true }
+once_cell = { workspace = true }
