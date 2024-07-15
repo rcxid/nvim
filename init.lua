@@ -12,5 +12,10 @@ else
 end
 
 if initLib then
-  require("comment").setup()
+  local status_ok, nvim_lib = pcall(require, "nvim_lib")
+  if not status_ok then
+    print("nvim_lib not fount!")
+  else
+    print("nvim_lib is loaded!")
+  end
 end

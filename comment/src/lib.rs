@@ -1,4 +1,5 @@
 use mlua::prelude::*;
+use mlua::Table;
 use nvim_oxi::api::opts::SetKeymapOpts;
 use nvim_oxi::api::types::Mode;
 
@@ -8,20 +9,49 @@ mod config;
 pub fn lib(lua: &Lua) -> LuaResult<(String, LuaTable)> {
     let lib_name = "comment".to_string();
     let comment = lua.create_table()?;
-    comment.set(
-        "comment_toggle_multiline",
-        lua.create_function(comment_toggle_multiline)?,
-    )?;
     let comment_line_func_name = "comment_line_toggle";
-    comment.set(comment_line_func_name, lua.create_function(comment_line_toggle_export)?)?;
+    let comment_multiline_func_name = "comment_multiline_toggle";
+    comment.set(
+        comment_line_func_name,
+        lua.create_function(comment_line_toggle_export)?,
+    )?;
+    comment.set(
+        comment_multiline_func_name,
+        lua.create_function(comment_multiline_toggle_export)?,
+    )?;
     let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
     nvim_oxi::api::set_keymap(
         Mode::Normal,
         "<C-g>",
-        format!(r#":lua require("nvim_lib").{}.{}()<CR>"#, lib_name, comment_line_func_name).as_str(),
+        format!(
+            r#":lua require("nvim_lib").{}.{}()<CR>"#,
+            lib_name, comment_line_func_name
+        )
+        .as_str(),
         &opts,
-    ).unwrap();
+    )
+    .unwrap();
+    nvim_oxi::api::set_keymap(
+        Mode::VisualSelect,
+        "<C-g>",
+        format!(
+            r#":lua require("nvim_lib").{}.{}()<CR>"#,
+            lib_name, comment_multiline_func_name
+        )
+        .as_str(),
+        &opts,
+    )
+    .unwrap();
     Ok((lib_name, comment))
+}
+
+struct VisualSelection {
+    pub start_row: usize,
+    #[allow(unused)]
+    pub start_col: usize,
+    pub end_row: usize,
+    #[allow(unused)]
+    pub end_col: usize,
 }
 
 /// comment one line toggle call by nvim
@@ -78,19 +108,82 @@ fn uncomment_line(comment_string: &str, content: String) -> String {
     }
 }
 
+/// 获取
+fn get_visual_selection(lua: &Lua) -> LuaResult<Option<VisualSelection>> {
+    let start: Table = lua.load(r#"vim.fn.getpos("'<")"#).eval()?;
+    let end: Table = lua.load(r#"vim.fn.getpos("'>")"#).eval()?;
+    if let Ok(4) = start.len() {
+        if let Ok(4) = end.len() {
+            let start_row: LuaResult<usize> = start.get(2);
+            let start_col: LuaResult<usize> = start.get(3);
+            let end_row: LuaResult<usize> = end.get(2);
+            let end_col: LuaResult<usize> = end.get(3);
+            if start_row.is_ok() && start_col.is_ok() && end_row.is_ok() && end_col.is_ok() {
+                let start_row = start_row.unwrap();
+                let start_col = start_col.unwrap();
+                let end_row = end_row.unwrap();
+                let end_col = end_col.unwrap();
+                return if start_row < end_row || (start_row == end_row && start_col <= end_col) {
+                    Ok(Some(VisualSelection {
+                        start_row,
+                        start_col,
+                        end_row,
+                        end_col,
+                    }))
+                } else {
+                    Ok(Some(VisualSelection {
+                        start_row: end_row,
+                        start_col: end_col,
+                        end_row: start_row,
+                        end_col: start_col,
+                    }))
+                };
+            }
+        }
+    }
+    Ok(None)
+}
+
+fn comment_multiline_toggle_export(lua: &Lua, (): ()) -> LuaResult<()> {
+    let filetype: String = lua.load("vim.bo.filetype").eval()?;
+    if let Some(comment_string) = config::comment_string(filetype) {
+        if let Some(selection) = get_visual_selection(lua)? {
+            let lines: Table = lua
+                .load(format!(
+                    r#"vim.api.nvim_buf_get_lines(0, {}, {}, false)"#,
+                    selection.start_row - 1,
+                    selection.end_row
+                ))
+                .eval()?;
+            let global = lua.globals();
+            let output_lines = comment_multiline_toggle(comment_string.as_str(), lines);
+            let cache_output_lines = lua.create_table()?;
+            for (index, value) in output_lines {
+                cache_output_lines.set(index, value)?;
+            }
+            global.set("output_lines", cache_output_lines)?;
+            lua.load(format!(
+                r#"vim.api.nvim_buf_set_lines(0, {}, {}, false, output_lines)"#,
+                selection.start_row - 1,
+                selection.end_row
+            ))
+            .exec()?;
+            global.raw_remove("output_lines")?;
+        }
+    }
+    Ok(())
+}
+
 /// comment toggle multiline
-fn comment_toggle_multiline<'a>(
-    lua: &'a Lua,
-    (comment_string, content): (String, LuaTable),
-) -> LuaResult<LuaTable<'a>> {
-    let output = lua.create_table()?;
+fn comment_multiline_toggle(comment_string: &str, lines: LuaTable) -> Vec<(usize, String)> {
+    let mut output_lines = Vec::new();
     // check comment or uncomment
-    let pairs: LuaTablePairs<usize, String> = content.pairs();
+    let pairs: LuaTablePairs<usize, String> = lines.pairs();
     let (comment_flag, list, comment_index) = pairs.fold(
         (false, Vec::new(), usize::MAX),
         |(mut comment_flag, mut list, mut comment_index), pair| {
             if let Ok((index, value)) = pair {
-                if !value.trim_start().starts_with(comment_string.as_str()) && value != "" {
+                if !value.trim_start().starts_with(comment_string) && value != "" {
                     comment_flag = true;
                 }
                 let line_index = value.find(|c: char| c != ' ').unwrap_or(value.len());
@@ -106,21 +199,18 @@ fn comment_toggle_multiline<'a>(
         // comment multiline
         for (index, value) in list {
             if value == "" {
-                output.set(index, value)?;
+                output_lines.push((index, value));
             } else {
-                output.set(
-                    index,
-                    comment_line(comment_string.as_str(), value, comment_index),
-                )?;
+                output_lines.push((index, comment_line(comment_string, value, comment_index)));
             }
         }
     } else {
         // uncomment multiline
         for (index, value) in list {
-            output.set(index, uncomment_line(comment_string.as_str(), value))?;
+            output_lines.push((index, uncomment_line(comment_string, value)))
         }
     }
-    Ok(output)
+    output_lines
 }
 
 #[cfg(test)]
