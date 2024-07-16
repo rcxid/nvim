@@ -57,7 +57,7 @@ struct VisualSelection {
 /// comment one line toggle call by nvim
 fn comment_line_toggle_export(lua: &Lua, (): ()) -> LuaResult<()> {
     if let Ok(current_line) = nvim_oxi::api::get_current_line() {
-        let filetype: String = lua.load("vim.bo.filetype").eval()?;
+        let filetype: String = api::buffer::filetype(lua)?;
         if let Some(comment_string) = config::comment_string(filetype) {
             let output = comment_line_toggle(comment_string.as_str(), current_line)?;
             let _ = nvim_oxi::api::set_current_line(output);
@@ -145,7 +145,7 @@ fn get_visual_selection(lua: &Lua) -> LuaResult<Option<VisualSelection>> {
 }
 
 fn comment_multiline_toggle_export(lua: &Lua, (): ()) -> LuaResult<()> {
-    let filetype: String = lua.load("vim.bo.filetype").eval()?;
+    let filetype: String = api::buffer::filetype(lua)?;
     if let Some(comment_string) = config::comment_string(filetype) {
         if let Some(selection) = get_visual_selection(lua)? {
             let lines: Table = lua

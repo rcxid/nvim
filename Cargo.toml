@@ -7,16 +7,20 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+comment = { workspace = true }
 mlua = { workspace = true }
 nvim-oxi = { workspace = true }
 once_cell = { workspace = true }
-comment = { path = "./comment" }
 
 [workspace]
 resolver = "2"
-members = ["comment"]
+members = ["api", "comment"]
 
 [workspace.dependencies]
+# local
+api = { path = "./api" }
+comment = { path = "./comment" }
+# crate
 mlua = { version = "0.9.9", features = ["luajit", "module"] }
 nvim-oxi = { version = "0.5.1", features = ["neovim-0-10"] }
 once_cell = "1.19.0"
