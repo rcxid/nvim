@@ -16,6 +16,7 @@ if initLib then
   if not status_ok then
     print("nvim_lib not fount!")
   else
+    nvim_lib.setup();
     print("nvim_lib is loaded!")
   end
 end
