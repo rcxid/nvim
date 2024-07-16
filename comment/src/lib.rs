@@ -148,27 +148,15 @@ fn comment_multiline_toggle_export(lua: &Lua, (): ()) -> LuaResult<()> {
     let filetype: String = api::buffer::filetype(lua)?;
     if let Some(comment_string) = config::comment_string(filetype) {
         if let Some(selection) = get_visual_selection(lua)? {
-            let lines: Table = lua
-                .load(format!(
-                    r#"vim.api.nvim_buf_get_lines(0, {}, {}, false)"#,
-                    selection.start_row - 1,
-                    selection.end_row
-                ))
-                .eval()?;
-            let global = lua.globals();
+            let start_row = selection.start_row - 1;
+            let end_row = selection.end_row;
+            let lines = api::buffer::get_lines(lua, 0, start_row, end_row, false)?;
             let output_lines = comment_multiline_toggle(comment_string.as_str(), lines);
             let cache_output_lines = lua.create_table()?;
             for (index, value) in output_lines {
                 cache_output_lines.set(index, value)?;
             }
-            global.set("output_lines", cache_output_lines)?;
-            lua.load(format!(
-                r#"vim.api.nvim_buf_set_lines(0, {}, {}, false, output_lines)"#,
-                selection.start_row - 1,
-                selection.end_row
-            ))
-            .exec()?;
-            global.raw_remove("output_lines")?;
+            api::buffer::set_lines(lua, 0, start_row, end_row, false, cache_output_lines)?;
         }
     }
     Ok(())
