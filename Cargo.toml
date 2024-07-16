@@ -8,18 +8,20 @@ crate-type = ["cdylib"]
 
 [dependencies]
 comment = { workspace = true }
+plugins = { workspace = true }
 mlua = { workspace = true }
 nvim-oxi = { workspace = true }
 once_cell = { workspace = true }
 
 [workspace]
 resolver = "2"
-members = ["api", "comment"]
+members = ["api", "comment", "plugins"]
 
 [workspace.dependencies]
 # local
 api = { path = "./api" }
 comment = { path = "./comment" }
+plugins = { path = "./plugins" }
 # crate
 mlua = { version = "0.9.9", features = ["luajit", "module"] }
 nvim-oxi = { version = "0.5.1", features = ["neovim-0-10"] }
