@@ -67,6 +67,10 @@ impl<'lua> Plugin for Plugins<'lua> {
             "used_memory",
             self.runtime.create_function(Plugins::used_memory)?,
         )?;
+        self.plugin.set("gc_collect", self.runtime.create_function(|lua, (): ()| {
+            lua.gc_collect()?;
+            Ok(())
+        })?)?;
         let globals = self.runtime.globals();
         globals.set(PLUGINS_NAME, self.plugin())?;
         Ok(())
