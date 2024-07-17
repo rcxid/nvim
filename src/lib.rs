@@ -1,19 +1,18 @@
 use mlua::prelude::*;
 
 use comment::Comment;
-use plugins::{Plugins, Plugin};
+use plugins::{Plugin, Plugins};
 
 #[mlua::lua_module]
 fn nvim_lib(lua: &Lua) -> LuaResult<LuaTable> {
-    let exports = lua.create_table()?;
-    exports.set("setup", lua.create_function(setup)?)?;
-    Ok(exports)
+    setup(lua)?;
+    lua.create_table()
 }
 
-fn setup(lua: &Lua, (): ()) -> LuaResult<()> {
-    let nvim_plugins = Plugins::try_new(lua)?;
+fn setup(lua: &Lua) -> LuaResult<()> {
+    let plugins = Plugins::try_new(lua)?;
     let comment = Comment::try_new(lua)?;
-    nvim_plugins.register(comment.name(), comment.plugin())?;
+    plugins.register(comment.name(), comment.plugin())?;
     Ok(())
 }
 

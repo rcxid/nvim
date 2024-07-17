@@ -1,22 +1,17 @@
-require("config.lazy")
-
-local initLib = false
 local osName = os.getenv("os")
 if osName == nil then
   os.execute("./update.sh")
-  initLib = true
 elseif osName == "Windows_NT" then
-  print("Windows")
+  -- Windows System
 else
   print("Other platforms!")
 end
 
-if initLib then
-  local status_ok, nvim_lib = pcall(require, "nvim_lib")
-  if not status_ok then
-    print("nvim_lib not fount!")
-  else
-    nvim_lib.setup();
-    print("nvim_lib is loaded!")
-  end
+require("config.lazy")
+
+local status_ok, nvim_lib = pcall(require, "nvim_lib")
+if status_ok then
+  print("nvim_lib is loaded!")
+else
+  print("nvim_lib not fount!")
 end
