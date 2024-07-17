@@ -3,7 +3,7 @@ use mlua::Table;
 use nvim_oxi::api::opts::SetKeymapOpts;
 use nvim_oxi::api::types::Mode;
 
-use plugins::{Plugins, Plugin};
+use plugins::{Plugin, Plugins};
 
 mod config;
 
@@ -141,55 +141,43 @@ fn uncomment_line(comment_string: &str, content: String) -> String {
 }
 
 /// 获取
-fn get_visual_selection(lua: &Lua) -> LuaResult<Option<VisualSelection>> {
-    let start: Table = lua.load(r#"vim.fn.getpos("'<")"#).eval()?;
-    let end: Table = lua.load(r#"vim.fn.getpos("'>")"#).eval()?;
-    if let Ok(4) = start.len() {
-        if let Ok(4) = end.len() {
-            let start_row: LuaResult<usize> = start.get(2);
-            let start_col: LuaResult<usize> = start.get(3);
-            let end_row: LuaResult<usize> = end.get(2);
-            let end_col: LuaResult<usize> = end.get(3);
-            if start_row.is_ok() && start_col.is_ok() && end_row.is_ok() && end_col.is_ok() {
-                let start_row = start_row.unwrap();
-                let start_col = start_col.unwrap();
-                let end_row = end_row.unwrap();
-                let end_col = end_col.unwrap();
-                return if start_row < end_row || (start_row == end_row && start_col <= end_col) {
-                    Ok(Some(VisualSelection {
-                        start_row,
-                        start_col,
-                        end_row,
-                        end_col,
-                    }))
-                } else {
-                    Ok(Some(VisualSelection {
-                        start_row: end_row,
-                        start_col: end_col,
-                        end_row: start_row,
-                        end_col: start_col,
-                    }))
-                };
-            }
-        }
+fn get_visual_selection(lua: &Lua) -> LuaResult<VisualSelection> {
+    let start = api::func::getpos(lua, "'<")?;
+    let end = api::func::getpos(lua, "'>")?;
+    let start_row = start.row;
+    let start_col = start.col;
+    let end_row = end.row;
+    let end_col = end.col;
+    if start_row < end_row || (start_row == end_row && start_col <= end_col) {
+        Ok(VisualSelection {
+            start_row,
+            start_col,
+            end_row,
+            end_col,
+        })
+    } else {
+        Ok(VisualSelection {
+            start_row: end_row,
+            start_col: end_col,
+            end_row: start_row,
+            end_col: start_col,
+        })
     }
-    Ok(None)
 }
 
 fn comment_multiline_toggle_export(lua: &Lua, (): ()) -> LuaResult<()> {
     let filetype: String = api::buffer::filetype(lua)?;
     if let Some(comment_string) = config::comment_string(filetype) {
-        if let Some(selection) = get_visual_selection(lua)? {
-            let start_row = selection.start_row - 1;
-            let end_row = selection.end_row;
-            let lines = api::buffer::get_lines(lua, 0, start_row, end_row, false)?;
-            let output_lines = comment_multiline_toggle(comment_string.as_str(), lines);
-            let cache_output_lines = lua.create_table()?;
-            for (index, value) in output_lines {
-                cache_output_lines.set(index, value)?;
-            }
-            api::buffer::set_lines(lua, 0, start_row, end_row, false, cache_output_lines)?;
+        let selection = get_visual_selection(lua)?;
+        let start_row = selection.start_row - 1;
+        let end_row = selection.end_row;
+        let lines = api::buffer::get_lines(lua, 0, start_row, end_row, false)?;
+        let output_lines = comment_multiline_toggle(comment_string.as_str(), lines);
+        let cache_output_lines = lua.create_table()?;
+        for (index, value) in output_lines {
+            cache_output_lines.set(index, value)?;
         }
+        api::buffer::set_lines(lua, 0, start_row, end_row, false, cache_output_lines)?;
     }
     Ok(())
 }
