@@ -1,6 +1,6 @@
 use std::string::ToString;
 
-use mlua::{Lua, Table};
+use mlua::{Function, Lua, Table};
 use mlua::prelude::LuaResult;
 
 const PLUGINS_NAME: &str = "plugins";
@@ -59,18 +59,27 @@ impl<'lua> Plugins<'lua> {
         self.plugin.set(plugin_name, plugin)?;
         Ok(())
     }
+
+    /// 注册函数
+    pub fn register_function(&self, function_name: &str, function: Function) -> LuaResult<()> {
+        self.plugin.set(function_name, function)?;
+        Ok(())
+    }
 }
 
 impl<'lua> Plugin for Plugins<'lua> {
     fn init(&self) -> LuaResult<()> {
-        self.plugin.set(
+        self.register_function(
             "used_memory",
             self.runtime.create_function(Plugins::used_memory)?,
         )?;
-        self.plugin.set("gc_collect", self.runtime.create_function(|lua, (): ()| {
-            lua.gc_collect()?;
-            Ok(())
-        })?)?;
+        self.register_function(
+            "gc_collect",
+            self.runtime.create_function(|lua, (): ()| {
+                lua.gc_collect()?;
+                Ok(())
+            })?,
+        )?;
         let globals = self.runtime.globals();
         globals.set(PLUGINS_NAME, self.plugin())?;
         Ok(())
