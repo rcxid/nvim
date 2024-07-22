@@ -1,7 +1,6 @@
 use std::string::ToString;
 
-use mlua::{Function, Lua, Table};
-use mlua::prelude::LuaResult;
+use mlua::prelude::*;
 
 const PLUGINS_NAME: &str = "plugins";
 
@@ -11,12 +10,12 @@ pub trait Plugin {
     /// plugin name
     fn name(&self) -> &str;
     /// plugin table
-    fn plugin(&self) -> Table;
+    fn plugin(&self) -> LuaTable;
 }
 
 pub struct Plugins<'lua> {
     name: &'lua str,
-    plugin: Table<'lua>,
+    plugin: LuaTable<'lua>,
     runtime: &'lua Lua,
 }
 
@@ -55,13 +54,13 @@ impl<'lua> Plugins<'lua> {
     }
 
     /// 注册插件
-    pub fn register(&self, plugin_name: &str, plugin: Table) -> LuaResult<()> {
+    pub fn register(&self, plugin_name: &str, plugin: LuaTable) -> LuaResult<()> {
         self.plugin.set(plugin_name, plugin)?;
         Ok(())
     }
 
     /// 注册函数
-    pub fn register_function(&self, function_name: &str, function: Function) -> LuaResult<()> {
+    pub fn register_function(&self, function_name: &str, function: LuaFunction) -> LuaResult<()> {
         self.plugin.set(function_name, function)?;
         Ok(())
     }
@@ -89,7 +88,7 @@ impl<'lua> Plugin for Plugins<'lua> {
         self.name
     }
 
-    fn plugin(&self) -> Table {
+    fn plugin(&self) -> LuaTable {
         self.plugin.clone()
     }
 }

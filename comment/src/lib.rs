@@ -1,5 +1,4 @@
 use mlua::prelude::*;
-use mlua::Table;
 use nvim_oxi::api::opts::SetKeymapOpts;
 use nvim_oxi::api::types::Mode;
 
@@ -10,7 +9,7 @@ mod config;
 /// 代码注释插件
 pub struct Comment<'lua> {
     name: &'lua str,
-    plugin: Table<'lua>,
+    plugin: LuaTable<'lua>,
     runtime: &'lua Lua,
 }
 
@@ -72,7 +71,7 @@ impl<'lua> Plugin for Comment<'lua> {
         self.name
     }
 
-    fn plugin(&self) -> Table {
+    fn plugin(&self) -> LuaTable {
         self.plugin.clone()
     }
 }
