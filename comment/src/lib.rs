@@ -13,8 +13,10 @@ pub struct Comment<'lua> {
     runtime: &'lua Lua,
 }
 
-impl<'lua> Comment<'lua> {
-    pub fn try_new(lua: &'lua Lua) -> LuaResult<Self> {
+impl<'lua> Plugin<'lua> for Comment<'lua> {
+    type Instance = Comment<'lua>;
+
+    fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance> {
         let plugin = lua.create_table()?;
         let comment = Comment {
             name: "comment",
@@ -24,9 +26,7 @@ impl<'lua> Comment<'lua> {
         comment.init()?;
         Ok(comment)
     }
-}
 
-impl<'lua> Plugin for Comment<'lua> {
     fn init(&self) -> LuaResult<()> {
         let comment_line_func_name = "comment_line_toggle";
         let comment_multiline_func_name = "comment_multiline_toggle";

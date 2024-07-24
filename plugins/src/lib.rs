@@ -4,7 +4,11 @@ use mlua::prelude::*;
 
 const PLUGINS_NAME: &str = "plugins";
 
-pub trait Plugin {
+pub trait Plugin<'lua> {
+    /// plugin instance type
+    type Instance;
+    /// plugin new
+    fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance>;
     /// plugin init
     fn init(&self) -> LuaResult<()>;
     /// plugin name
@@ -20,17 +24,6 @@ pub struct Plugins<'lua> {
 }
 
 impl<'lua> Plugins<'lua> {
-    pub fn try_new(lua: &'lua Lua) -> LuaResult<Self> {
-        let plugin = lua.create_table()?;
-        let nvim_plugins = Plugins {
-            name: PLUGINS_NAME,
-            plugin,
-            runtime: lua,
-        };
-        nvim_plugins.init()?;
-        Ok(nvim_plugins)
-    }
-
     /// plugins name
     pub fn name() -> String {
         PLUGINS_NAME.to_string()
@@ -66,7 +59,20 @@ impl<'lua> Plugins<'lua> {
     }
 }
 
-impl<'lua> Plugin for Plugins<'lua> {
+impl<'lua> Plugin<'lua> for Plugins<'lua> {
+    type Instance = Plugins<'lua>;
+
+    fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance> {
+        let plugin = lua.create_table()?;
+        let nvim_plugins = Plugins {
+            name: PLUGINS_NAME,
+            plugin,
+            runtime: lua,
+        };
+        nvim_plugins.init()?;
+        Ok(nvim_plugins)
+    }
+
     fn init(&self) -> LuaResult<()> {
         self.register_function(
             "used_memory",
