@@ -3,6 +3,9 @@ use std::string::ToString;
 use mlua::prelude::*;
 
 const PLUGINS_NAME: &str = "plugins";
+const _1K_BYTE: f64 = 1024.0;
+const _1M_BYTE: f64 = 1024.0 * _1K_BYTE;
+const _1G_BYTE: f64 = 1024.0 * _1M_BYTE;
 
 pub trait Plugin<'lua> {
     /// plugin instance type
@@ -30,15 +33,15 @@ impl<'lua> Plugins<'lua> {
     }
 
     fn used_memory(lua: &Lua, (): ()) -> LuaResult<String> {
-        let used_memory = lua.used_memory();
-        let used_memory_format = if used_memory >= 1024 {
-            if used_memory >= 1024 * 1024 {
-                format!("{:.2}MB", used_memory as f32 / 1024.0 / 1024.0)
-            } else {
-                format!("{:.2}KB", used_memory as f32 / 1024.0)
-            }
+        let used_memory = lua.used_memory() as f64;
+        let used_memory_format = if used_memory >= _1G_BYTE {
+            format!("{:.2}GB", used_memory / _1G_BYTE)
+        } else if used_memory >= _1M_BYTE {
+            format!("{:.2}MB", used_memory / _1M_BYTE)
+        } else if used_memory >= _1K_BYTE {
+            format!("{:.2}KB", used_memory / _1K_BYTE)
         } else {
-            format!("{}B", used_memory)
+            format!("{:.0}B", used_memory)
         };
         Ok(format!(
             "rust nvim library used memory: {}",
