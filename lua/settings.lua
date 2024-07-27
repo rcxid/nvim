@@ -20,3 +20,5 @@ option.scrolloff      = 8            -- jk移动时光标下上方保留8行
 -- sidescrolloff   = 8;
 
 vim.g.mapleader = " "
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0
