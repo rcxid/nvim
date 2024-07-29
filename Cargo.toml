@@ -15,12 +15,13 @@ once_cell = { workspace = true }
 
 [workspace]
 resolver = "2"
-members = ["api", "comment", "plugins"]
+members = ["api", "comment", "crates", "plugins"]
 
 [workspace.dependencies]
 # local
 api = { path = "./api" }
 comment = { path = "./comment" }
+crates = { path = "./crates" }
 plugins = { path = "./plugins" }
 # crate
 mlua = { version = "0.9.9", features = ["luajit", "module"] }
