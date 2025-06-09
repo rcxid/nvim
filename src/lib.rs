@@ -1,7 +1,7 @@
 use mlua::prelude::*;
 
 use comment::Comment;
-use plugins::{Plugin, Plugins};
+use plugins::{Plugin, RootPlugin};
 
 #[mlua::lua_module]
 fn nvim_lib(lua: &Lua) -> LuaResult<LuaTable> {
@@ -10,9 +10,10 @@ fn nvim_lib(lua: &Lua) -> LuaResult<LuaTable> {
 }
 
 fn setup(lua: &Lua) -> LuaResult<()> {
-    let plugins = Plugins::try_new(lua)?;
+    let root = RootPlugin::try_new(lua)?;
     let comment = Comment::try_new(lua)?;
-    plugins.register(comment.name(), comment.plugin())?;
+    // 把代码注释插件注册到根插件上
+    root.register_plugin(comment)?;
     Ok(())
 }
 

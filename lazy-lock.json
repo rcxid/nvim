@@ -1,6 +1,6 @@
 {
   "killer-queen": { "branch": "master", "commit": "e43ec0f909fc1bdfc40c63f35be25ecea5dbcb67" },
-  "lazy.nvim": { "branch": "main", "commit": "077102c5bfc578693f12377846d427f49bc50076" },
+  "lazy.nvim": { "branch": "main", "commit": "6c3bda4aca61a13a9c63f1c1d1b16b9d3be90d7a" },
   "neo-tree.nvim": { "branch": "v3.x", "commit": "29f7c215332ba95e470811c380ddbce2cebe2af4" },
   "nui.nvim": { "branch": "main", "commit": "61574ce6e60c815b0a0c4b5655b8486ba58089a1" },
   "nvim-treesitter": { "branch": "master", "commit": "0f6be799628589c2576194f5735924138f537c2f" },

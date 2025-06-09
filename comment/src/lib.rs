@@ -2,14 +2,14 @@ use mlua::prelude::*;
 use nvim_oxi::api::opts::SetKeymapOpts;
 use nvim_oxi::api::types::Mode;
 
-use plugins::{Plugin, Plugins};
+use plugins::{Plugin, RootPlugin};
 
 mod config;
 
 /// 代码注释插件
 pub struct Comment<'lua> {
     name: &'lua str,
-    plugin: LuaTable<'lua>,
+    plugin: LuaTable,
     runtime: &'lua Lua,
 }
 
@@ -45,7 +45,7 @@ impl<'lua> Plugin<'lua> for Comment<'lua> {
             "<C-g>",
             format!(
                 r#":lua {}.{}.{}()<CR>"#,
-                Plugins::name(),
+                RootPlugin::name(),
                 self.name(),
                 comment_line_func_name
             )
@@ -57,7 +57,7 @@ impl<'lua> Plugin<'lua> for Comment<'lua> {
             "<C-g>",
             format!(
                 r#":lua {}.{}.{}()<CR>"#,
-                Plugins::name(),
+                RootPlugin::name(),
                 self.name(),
                 comment_multiline_func_name
             )

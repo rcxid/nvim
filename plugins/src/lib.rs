@@ -20,13 +20,13 @@ pub trait Plugin<'lua> {
     fn plugin(&self) -> LuaTable;
 }
 
-pub struct Plugins<'lua> {
+pub struct RootPlugin<'lua> {
     name: &'lua str,
-    plugin: LuaTable<'lua>,
+    plugin: LuaTable,
     runtime: &'lua Lua,
 }
 
-impl<'lua> Plugins<'lua> {
+impl<'lua> RootPlugin<'lua> {
     /// plugins name
     pub fn name() -> String {
         PLUGINS_NAME.to_string()
@@ -50,8 +50,8 @@ impl<'lua> Plugins<'lua> {
     }
 
     /// 注册插件
-    pub fn register(&self, plugin_name: &str, plugin: LuaTable) -> LuaResult<()> {
-        self.plugin.set(plugin_name, plugin)?;
+    pub fn register_plugin<'a>(&self, plugin: impl Plugin<'a>) -> LuaResult<()> {
+        self.plugin.set(plugin.name(), plugin.plugin())?;
         Ok(())
     }
 
@@ -62,12 +62,12 @@ impl<'lua> Plugins<'lua> {
     }
 }
 
-impl<'lua> Plugin<'lua> for Plugins<'lua> {
-    type Instance = Plugins<'lua>;
+impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
+    type Instance = RootPlugin<'lua>;
 
     fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance> {
         let plugin = lua.create_table()?;
-        let nvim_plugins = Plugins {
+        let nvim_plugins = RootPlugin {
             name: PLUGINS_NAME,
             plugin,
             runtime: lua,
@@ -79,7 +79,7 @@ impl<'lua> Plugin<'lua> for Plugins<'lua> {
     fn init(&self) -> LuaResult<()> {
         self.register_function(
             "used_memory",
-            self.runtime.create_function(Plugins::used_memory)?,
+            self.runtime.create_function(RootPlugin::used_memory)?,
         )?;
         self.register_function(
             "gc_collect",
