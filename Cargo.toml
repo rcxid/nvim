@@ -15,14 +15,14 @@ once_cell = { workspace = true }
 
 [workspace]
 resolver = "2"
-members = ["api", "comment", "crates", "plugin"]
+members = ["api", "plugin", "plugins/comment", "plugins/crates"]
 
 [workspace.dependencies]
 # local
 api = { path = "./api" }
-comment = { path = "./comment" }
-crates = { path = "./crates" }
 plugin = { path = "./plugin" }
+comment = { path = "./plugins/comment" }
+crates = { path = "./plugins/crates" }
 # crate
 mlua = { version = "0.10.5", features = ["luajit", "module"] }
 nvim-oxi = { version = "0.6.0", features = ["neovim-0-11"] }
