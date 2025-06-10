@@ -12,8 +12,9 @@ fn nvim_lib(lua: &Lua) -> LuaResult<LuaTable> {
 fn setup(lua: &Lua) -> LuaResult<()> {
     let root = RootPlugin::try_new(lua)?;
     let comment = Comment::try_new(lua)?;
-    // 把代码注释插件注册到根插件上
-    root.register_plugin(comment)?;
+    // 插件注册
+    root.register()?;
+    comment.register()?;
     Ok(())
 }
 

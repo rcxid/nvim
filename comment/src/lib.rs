@@ -2,7 +2,7 @@ use mlua::prelude::*;
 use nvim_oxi::api::opts::SetKeymapOpts;
 use nvim_oxi::api::types::Mode;
 
-use plugins::{Plugin, RootPlugin};
+use plugins::Plugin;
 
 mod config;
 
@@ -43,21 +43,14 @@ impl<'lua> Plugin<'lua> for Comment<'lua> {
         let _ = nvim_oxi::api::set_keymap(
             Mode::Normal,
             "<C-g>",
-            format!(
-                r#":lua {}.{}.{}()<CR>"#,
-                RootPlugin::name(),
-                self.name(),
-                comment_line_func_name
-            )
-            .as_str(),
+            format!(r#":lua {}.{}()<CR>"#, self.name(), comment_line_func_name).as_str(),
             &opts,
         );
         let _ = nvim_oxi::api::set_keymap(
             Mode::VisualSelect,
             "<C-g>",
             format!(
-                r#":lua {}.{}.{}()<CR>"#,
-                RootPlugin::name(),
+                r#":lua {}.{}()<CR>"#,
                 self.name(),
                 comment_multiline_func_name
             )
@@ -73,6 +66,10 @@ impl<'lua> Plugin<'lua> for Comment<'lua> {
 
     fn plugin(&self) -> LuaTable {
         self.plugin.clone()
+    }
+
+    fn runtime(&self) -> &'lua Lua {
+        self.runtime
     }
 }
 

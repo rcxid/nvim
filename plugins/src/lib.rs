@@ -18,6 +18,14 @@ pub trait Plugin<'lua> {
     fn name(&self) -> &str;
     /// plugin table
     fn plugin(&self) -> LuaTable;
+    /// lua runtime
+    fn runtime(&self) -> &'lua Lua;
+    /// 注册插件
+    fn register(&self) -> LuaResult<()> {
+        let globals = self.runtime().globals();
+        globals.set(self.name(), self.plugin())?;
+        Ok(())
+    }
 }
 
 pub struct RootPlugin<'lua> {
@@ -88,8 +96,6 @@ impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
                 Ok(())
             })?,
         )?;
-        let globals = self.runtime.globals();
-        globals.set(PLUGINS_NAME, self.plugin())?;
         Ok(())
     }
 
@@ -99,6 +105,10 @@ impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
 
     fn plugin(&self) -> LuaTable {
         self.plugin.clone()
+    }
+
+    fn runtime(&self) -> &'lua Lua {
+        self.runtime
     }
 }
 

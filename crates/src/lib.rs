@@ -4,7 +4,7 @@ use plugins::Plugin;
 
 pub struct CratesPlugin<'lua> {
     pub name: &'lua str,
-    pub plugin: LuaTable<'lua>,
+    pub plugin: LuaTable,
     pub runtime: &'lua Lua,
 }
 
@@ -32,6 +32,10 @@ impl<'lua> Plugin<'lua> for CratesPlugin<'lua> {
 
     fn plugin(&self) -> LuaTable {
         self.plugin.clone()
+    }
+
+    fn runtime(&self) -> &'lua Lua {
+        self.runtime
     }
 }
 
