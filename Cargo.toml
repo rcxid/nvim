@@ -8,21 +8,21 @@ crate-type = ["cdylib"]
 
 [dependencies]
 comment = { workspace = true }
-plugins = { workspace = true }
+plugin = { workspace = true }
 mlua = { workspace = true }
 nvim-oxi = { workspace = true }
 once_cell = { workspace = true }
 
 [workspace]
 resolver = "2"
-members = ["api", "comment", "crates", "plugins"]
+members = ["api", "comment", "crates", "plugin"]
 
 [workspace.dependencies]
 # local
 api = { path = "./api" }
 comment = { path = "./comment" }
 crates = { path = "./crates" }
-plugins = { path = "./plugins" }
+plugin = { path = "./plugin" }
 # crate
 mlua = { version = "0.10.5", features = ["luajit", "module"] }
 nvim-oxi = { version = "0.6.0", features = ["neovim-0-11"] }

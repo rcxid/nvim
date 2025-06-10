@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 api = { workspace = true }
-plugins = { workspace = true }
+plugin = { workspace = true }
 mlua = { workspace = true }
 nvim-oxi = { workspace = true }
 once_cell = { workspace = true }

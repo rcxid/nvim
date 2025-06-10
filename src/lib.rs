@@ -1,7 +1,7 @@
 use mlua::prelude::*;
 
 use comment::Comment;
-use plugins::{Plugin, RootPlugin};
+use plugin::{Plugin, RootPlugin};
 
 #[mlua::lua_module]
 fn nvim_lib(lua: &Lua) -> LuaResult<LuaTable> {

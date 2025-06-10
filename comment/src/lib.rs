@@ -2,7 +2,7 @@ use mlua::prelude::*;
 use nvim_oxi::api::opts::SetKeymapOpts;
 use nvim_oxi::api::types::Mode;
 
-use plugins::Plugin;
+use plugin::Plugin;
 
 mod config;
 

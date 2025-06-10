@@ -1,6 +1,6 @@
 use mlua::prelude::*;
 
-use plugins::Plugin;
+use plugin::Plugin;
 
 pub struct CratesPlugin<'lua> {
     pub name: &'lua str,

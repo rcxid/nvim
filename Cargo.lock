@@ -51,7 +51,7 @@ dependencies = [
  "mlua",
  "nvim-oxi",
  "once_cell",
- "plugins",
+ "plugin",
 ]
 
 [[package]]
@@ -59,7 +59,7 @@ name = "crates"
 version = "0.1.0"
 dependencies = [
  "mlua",
- "plugins",
+ "plugin",
 ]
 
 [[package]]
@@ -145,7 +145,7 @@ dependencies = [
  "mlua",
  "nvim-oxi",
  "once_cell",
- "plugins",
+ "plugin",
 ]
 
 [[package]]
@@ -243,7 +243,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
-name = "plugins"
+name = "plugin"
 version = "0.1.0"
 dependencies = [
  "mlua",
