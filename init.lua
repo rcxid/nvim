@@ -1,6 +1,7 @@
 require("settings")
 require("update").setup()
 require("config.lazy")
+require("config.lsp")
 
 local status_ok, _nvim_lib = pcall(require, "nvim_lib")
 if status_ok then
