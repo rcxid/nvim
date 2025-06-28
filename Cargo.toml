@@ -12,10 +12,11 @@ plugin = { workspace = true }
 mlua = { workspace = true }
 nvim-oxi = { workspace = true }
 once_cell = { workspace = true }
+session = { workspace = true }
 
 [workspace]
 resolver = "2"
-members = ["api", "plugin", "plugins/comment", "plugins/crates"]
+members = ["api", "plugin", "plugins/comment", "plugins/crates", "plugins/session"]
 
 [workspace.dependencies]
 # local
@@ -23,7 +24,10 @@ api = { path = "./api" }
 plugin = { path = "./plugin" }
 comment = { path = "./plugins/comment" }
 crates = { path = "./plugins/crates" }
+session = { path = "./plugins/session" }
 # crate
+anyhow = "1.0.98"
 mlua = { version = "0.10.5", features = ["luajit", "module"] }
 nvim-oxi = { version = "0.6.0", features = ["neovim-0-11"] }
 once_cell = "1.21.3"
+rusqlite = { version = "0.36.0", features = ["bundled"] }

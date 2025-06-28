@@ -17,14 +17,11 @@ impl<'lua> Plugin<'lua> for Comment<'lua> {
     type Instance = Comment<'lua>;
 
     fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance> {
-        let plugin = lua.create_table()?;
-        let comment = Comment {
+        Ok(Comment {
             name: "comment",
-            plugin,
+            plugin: lua.create_table()?,
             runtime: lua,
-        };
-        comment.init()?;
-        Ok(comment)
+        })
     }
 
     fn init(&self) -> LuaResult<()> {

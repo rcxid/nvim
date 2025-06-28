@@ -22,6 +22,7 @@ pub trait Plugin<'lua> {
     fn runtime(&self) -> &'lua Lua;
     /// 注册插件
     fn register(&self) -> LuaResult<()> {
+        self.init()?;
         let globals = self.runtime().globals();
         globals.set(self.name(), self.plugin())?;
         Ok(())
@@ -74,14 +75,11 @@ impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
     type Instance = RootPlugin<'lua>;
 
     fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance> {
-        let plugin = lua.create_table()?;
-        let nvim_plugins = RootPlugin {
+        Ok(RootPlugin {
             name: PLUGINS_NAME,
-            plugin,
+            plugin: lua.create_table()?,
             runtime: lua,
-        };
-        nvim_plugins.init()?;
-        Ok(nvim_plugins)
+        })
     }
 
     fn init(&self) -> LuaResult<()> {

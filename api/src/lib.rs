@@ -1,4 +1,5 @@
 pub mod buffer;
+pub mod builtin_fn;
 pub mod func;
 
 #[cfg(test)]
