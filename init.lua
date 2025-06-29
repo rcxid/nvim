@@ -1,5 +1,6 @@
+-- os.execute("wezterm cli set-tab-title nvim")
 require("settings")
-require("update").setup()
+--require("update").setup()
 require("config.lazy")
 require("config.lsp")
 
