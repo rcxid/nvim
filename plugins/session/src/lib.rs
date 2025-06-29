@@ -118,8 +118,13 @@ impl<'lua> Session<'lua> {
             format!("mks! {}", session.data)
         } else {
             let session_path = SessionPath::try_new(lua)?;
-            let file_name = api::util::generate_random_string(8);
-            let file_path = format!("{}/{}.vim", session_path.plugin, file_name);
+            let mut file_name = api::util::generate_random_string(8);
+            let mut file_path = format!("{}/{}.vim", session_path.plugin, file_name);
+            // 路径存在重新生成
+            while fs::exists(file_path.as_str())? {
+                file_name = api::util::generate_random_string(8);
+                file_path = format!("{}/{}.vim", session_path.plugin, file_name);
+            }
             let cmd = format!("mks! {}", file_path);
             let data = SessionData {
                 path: cwd,
