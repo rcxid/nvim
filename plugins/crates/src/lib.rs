@@ -12,18 +12,15 @@ impl<'lua> Plugin<'lua> for CratesPlugin<'lua> {
     type Instance = CratesPlugin<'lua>;
 
     fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance> {
-        let plugin = lua.create_table()?;
-        let crates_plugin = CratesPlugin {
+        Ok(CratesPlugin {
             name: "crates",
-            plugin,
+            plugin: lua.create_table()?,
             runtime: lua,
-        };
-        // crates_plugin.init()?;
-        Ok(crates_plugin)
+        })
     }
 
     fn init(&self) -> LuaResult<()> {
-        todo!()
+        Ok(())
     }
 
     fn name(&self) -> &str {

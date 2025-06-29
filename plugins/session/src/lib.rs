@@ -3,7 +3,9 @@ use mlua::Error::RuntimeError;
 use mlua::{IntoLua, Lua, Value};
 use plugin::Plugin;
 use rusqlite::Connection;
+use std::collections::HashSet;
 use std::fs;
+use std::path::Path;
 
 const PLUGIN_NAME: &str = "session";
 
@@ -74,21 +76,25 @@ impl<'lua> Session<'lua> {
             "session_list",
             self.runtime.create_function(Session::session_list)?,
         )?;
+        self.plugin.set(
+            "clean_session",
+            self.runtime.create_function(Session::clean_session)?,
+        )?;
         Ok(())
     }
 
     fn connect_database(&self) -> LuaResult<Connection> {
-        Self::connect_database_(self.database.as_str())
+        Self::_connect_database(self.database.as_str())
     }
 
-    fn connect_database_(database: &str) -> LuaResult<Connection> {
+    fn _connect_database(database: &str) -> LuaResult<Connection> {
         Connection::open(database)
             .map_err(|_| RuntimeError("session plugin connect sqlite database failed!".to_string()))
     }
 
     fn query_session(lua: &Lua, workspace_path: &str) -> LuaResult<SessionData> {
         let session_path = SessionPath::try_new(lua)?;
-        let conn = Self::connect_database_(session_path.database.as_str())?;
+        let conn = Self::_connect_database(session_path.database.as_str())?;
         let query_sql = r#"
           SELECT
             *
@@ -128,7 +134,7 @@ impl<'lua> Session<'lua> {
 
     fn save_session(lua: &Lua, session: SessionData) -> LuaResult<()> {
         let session_path = SessionPath::try_new(lua)?;
-        let conn = Self::connect_database_(session_path.database.as_str())?;
+        let conn = Self::_connect_database(session_path.database.as_str())?;
         let update_sql = r#"
           INSERT INTO session (path, data)
           VALUES (?1, ?2);
@@ -141,12 +147,21 @@ impl<'lua> Session<'lua> {
     }
 
     fn session_list(lua: &Lua, (): ()) -> LuaResult<LuaTable> {
+        let list = Self::_session_list(lua)?;
+        let table = lua.create_table()?;
+        for (index, data) in list.into_iter().enumerate() {
+            table.set(index + 1, data)?;
+        }
+        Ok(table)
+    }
+
+    fn _session_list(lua: &Lua) -> LuaResult<Vec<SessionData>> {
         let session_path = SessionPath::try_new(lua)?;
-        let conn = Self::connect_database_(session_path.database.as_str())?;
+        let conn = Self::_connect_database(session_path.database.as_str())?;
         let mut stmt = conn
             .prepare("SELECT * FROM session;")
             .map_err(|_| RuntimeError("session plugin sql prepare failed!".to_string()))?;
-        let list: Vec<_> = stmt
+        Ok(stmt
             .query_map([], |row| {
                 Ok(SessionData {
                     path: row.get(0)?,
@@ -155,12 +170,58 @@ impl<'lua> Session<'lua> {
             })
             .map_err(|_| RuntimeError("session plugin sql query failed!".to_string()))?
             .filter_map(|x| x.ok())
-            .collect();
-        let table = lua.create_table()?;
-        for (index, data) in list.into_iter().enumerate() {
-            table.set(index + 1, data)?;
+            .collect())
+    }
+
+    fn clean_session(lua: &Lua, (): ()) -> LuaResult<()> {
+        let list = Self::_session_list(lua)?;
+        let session_path = SessionPath::try_new(lua)?;
+        // 数据库删除文件系统文件不存在的记录
+        let fs_not_exists = list
+            .iter()
+            .filter_map(|session| {
+                if let Ok(true) = fs::exists(session.data.as_str()) {
+                    None
+                } else {
+                    Some(session)
+                }
+            })
+            .collect::<Vec<_>>();
+        if fs_not_exists.len() > 0 {
+            let clean_sql = format!(
+                r#"
+              DELETE FROM session
+              WHERE path IN ({});
+            "#,
+                fs_not_exists
+                    .into_iter()
+                    .map(|x| format!("'{}'", x.path.as_str()))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            let conn = Self::_connect_database(session_path.database.as_str())?;
+            conn.execute(clean_sql.as_str(), ())
+                .map_err(|_| RuntimeError("session plugin clean session failed!".to_string()))?;
         }
-        Ok(table)
+        // 文件系统删除数据库中没有记录的vim文件
+        let fs_exists = list
+            .into_iter()
+            .filter_map(|session| {
+                if let Ok(true) = fs::exists(session.data.as_str()) {
+                    Some(session.data)
+                } else {
+                    None
+                }
+            })
+            .collect::<HashSet<_>>();
+        walk_dir_vim(session_path.plugin.as_str())
+            .into_iter()
+            .for_each(|session_file| {
+                if !fs_exists.contains(&session_file) {
+                    let _ = fs::remove_file(session_file.as_str());
+                }
+            });
+        Ok(())
     }
 }
 
@@ -194,5 +255,27 @@ impl<'lua> Plugin<'lua> for Session<'lua> {
 
     fn runtime(&self) -> &'lua Lua {
         self.runtime
+    }
+}
+
+pub fn walk_dir_vim(dir_path: &str) -> Vec<String> {
+    if let Ok(entries) = fs::read_dir(Path::new(dir_path)) {
+        entries
+            .flatten()
+            .filter_map(|entry| {
+                let mut res = None;
+                let path = entry.path();
+                if path.is_file() {
+                    if let Some(ext) = path.extension() {
+                        if ext == "vim" {
+                            res = Some(format!("{}", path.display()));
+                        }
+                    }
+                }
+                res
+            })
+            .collect()
+    } else {
+        vec![]
     }
 }
