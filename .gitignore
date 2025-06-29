@@ -3,3 +3,6 @@
 .vscode
 /lua/*.so
 /lua/*.dll
+/.luarc.json
+/test.lua
+/*.db
