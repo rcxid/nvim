@@ -108,22 +108,21 @@ impl<'lua> Session<'lua> {
 
     fn make_session(lua: &Lua, (): ()) -> LuaResult<()> {
         let cwd = api::builtin_fn::getcwd(lua)?;
-        let (cmd, data) = if let Ok(session) = Self::query_session(lua, cwd.as_str()) {
-            (format!("mks! {}", session.data), session)
+        let cmd = if let Ok(session) = Self::query_session(lua, cwd.as_str()) {
+            format!("mks! {}", session.data)
         } else {
             let session_path = SessionPath::try_new(lua)?;
             let file_name = api::util::generate_random_string(8);
             let file_path = format!("{}/{}.vim", session_path.plugin, file_name);
-            (
-                format!("mks! {}", file_path),
-                SessionData {
-                    path: cwd,
-                    data: file_path,
-                },
-            )
+            let cmd = format!("mks! {}", file_path);
+            let data = SessionData {
+                path: cwd,
+                data: file_path,
+            };
+            Self::save_session(lua, data)?;
+            cmd
         };
         api::cmd(lua, cmd)?;
-        Self::save_session(lua, data)?;
         Ok(())
     }
 
@@ -132,15 +131,12 @@ impl<'lua> Session<'lua> {
         let conn = Self::connect_database_(session_path.database.as_str())?;
         let update_sql = r#"
           INSERT INTO session (path, data)
-          VALUES (?1, ?2)
-          ON CONFLICT(path) DO UPDATE
-          SET path = ?3, data = ?4;
+          VALUES (?1, ?2);
+          -- ON CONFLICT(path) DO UPDATE
+          -- SET path = ?3, data = ?4;
         "#;
-        conn.execute(
-            update_sql,
-            (&session.path, &session.data, &session.path, &session.data),
-        )
-        .map_err(|_| RuntimeError("session plugin save session failed!".to_string()))?;
+        conn.execute(update_sql, (&session.path, &session.data))
+            .map_err(|_| RuntimeError("session plugin save session failed!".to_string()))?;
         Ok(())
     }
 
@@ -162,7 +158,7 @@ impl<'lua> Session<'lua> {
             .collect();
         let table = lua.create_table()?;
         for (index, data) in list.into_iter().enumerate() {
-            table.set(index, data)?;
+            table.set(index + 1, data)?;
         }
         Ok(table)
     }
