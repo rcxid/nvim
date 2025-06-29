@@ -6,12 +6,8 @@ pub mod builtin_fn;
 pub mod func;
 pub mod util;
 
-pub fn cmd(lua: &Lua, cmd: Option<String>) -> LuaResult<()> {
-    if let Some(cmd) = cmd {
-        Ok(lua.load(format!("vim.cmd([[{cmd}]])")).eval()?)
-    } else {
-        Ok(())
-    }
+pub fn cmd(lua: &Lua, cmd: String) -> LuaResult<()> {
+    Ok(lua.load(format!("vim.cmd([[{cmd}]])")).eval()?)
 }
 
 #[cfg(test)]
