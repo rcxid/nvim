@@ -1,5 +1,3 @@
-use std::string::ToString;
-
 use mlua::prelude::*;
 
 const PLUGINS_NAME: &str = "plugins";
@@ -36,11 +34,6 @@ pub struct RootPlugin<'lua> {
 }
 
 impl<'lua> RootPlugin<'lua> {
-    /// plugins name
-    pub fn name() -> String {
-        PLUGINS_NAME.to_string()
-    }
-
     fn used_memory(lua: &Lua, (): ()) -> LuaResult<String> {
         let used_memory = lua.used_memory() as f64;
         let used_memory_format = if used_memory >= _1G_BYTE {
@@ -57,18 +50,6 @@ impl<'lua> RootPlugin<'lua> {
             used_memory_format
         ))
     }
-
-    /// 注册插件
-    pub fn register_plugin<'a>(&self, plugin: impl Plugin<'a>) -> LuaResult<()> {
-        self.plugin.set(plugin.name(), plugin.plugin())?;
-        Ok(())
-    }
-
-    /// 注册函数
-    pub fn register_function(&self, function_name: &str, function: LuaFunction) -> LuaResult<()> {
-        self.plugin.set(function_name, function)?;
-        Ok(())
-    }
 }
 
 impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
@@ -83,11 +64,11 @@ impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
     }
 
     fn init(&self) -> LuaResult<()> {
-        self.register_function(
+        self.plugin.set(
             "used_memory",
             self.runtime.create_function(RootPlugin::used_memory)?,
         )?;
-        self.register_function(
+        self.plugin.set(
             "gc_collect",
             self.runtime.create_function(|lua, (): ()| {
                 lua.gc_collect()?;
