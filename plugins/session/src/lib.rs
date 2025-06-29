@@ -53,12 +53,12 @@ impl<'lua> Session<'lua> {
         fs::create_dir_all(self.path.as_str())?;
         let conn = self.connect_database()?;
         let table_create_sql = r#"
-              CREATE TABLE IF NOT EXISTS session (
-                -- workspace path
-                path TEXT PRIMARY KEY,
-                -- session data path
-                data TEXT NOT NULL UNIQUE
-              )"#;
+          CREATE TABLE IF NOT EXISTS session (
+            -- workspace path
+            path TEXT PRIMARY KEY,
+            -- session data path
+            data TEXT NOT NULL UNIQUE
+          )"#;
         conn.execute(table_create_sql, ())
             .map_err(|_| RuntimeError("session plugin exec sql failed!".to_string()))?;
         Ok(())
@@ -102,7 +102,7 @@ impl<'lua> Session<'lua> {
                     data: row.get(1)?,
                 })
             })
-            .map_err(|_| RuntimeError("".to_string()))?;
+            .map_err(|_| RuntimeError("session plugin query session failed!".to_string()))?;
         Ok(session)
     }
 
@@ -140,7 +140,7 @@ impl<'lua> Session<'lua> {
             update_sql,
             (&session.path, &session.data, &session.path, &session.data),
         )
-        .map_err(|_| RuntimeError("".to_string()))?;
+        .map_err(|_| RuntimeError("session plugin save session failed!".to_string()))?;
         Ok(())
     }
 
@@ -149,7 +149,7 @@ impl<'lua> Session<'lua> {
         let conn = Self::connect_database_(session_path.database.as_str())?;
         let mut stmt = conn
             .prepare("SELECT * FROM session;")
-            .map_err(|_| RuntimeError("".to_string()))?;
+            .map_err(|_| RuntimeError("session plugin sql prepare failed!".to_string()))?;
         let list: Vec<_> = stmt
             .query_map([], |row| {
                 Ok(SessionData {
@@ -157,7 +157,7 @@ impl<'lua> Session<'lua> {
                     data: row.get(1)?,
                 })
             })
-            .map_err(|_| RuntimeError("".to_string()))?
+            .map_err(|_| RuntimeError("session plugin sql query failed!".to_string()))?
             .filter_map(|x| x.ok())
             .collect();
         let table = lua.create_table()?;
