@@ -14,7 +14,7 @@ session = { workspace = true }
 
 [workspace]
 resolver = "2"
-members = ["api", "plugin", "plugins/comment", "plugins/crates", "plugins/session"]
+members = ["api", "plugin", "plugins/comment", "plugins/crates", "plugins/project", "plugins/session"]
 
 [workspace.dependencies]
 # local
@@ -22,6 +22,7 @@ api = { path = "./api" }
 plugin = { path = "./plugin" }
 comment = { path = "./plugins/comment" }
 crates = { path = "./plugins/crates" }
+project = { path = "./plugins/project" }
 session = { path = "./plugins/session" }
 # crate
 mlua = { version = "0.10.5", features = ["luajit", "module"] }
