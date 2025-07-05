@@ -1,7 +1,7 @@
 use mlua::prelude::{LuaResult, LuaTable};
 use mlua::Error::RuntimeError;
 use mlua::{IntoLua, Lua, Value};
-use plugin::Plugin;
+use plugin::{Plugin, ROOT_PLUGINS_NAME};
 use rusqlite::Connection;
 use std::collections::HashSet;
 use std::fs;
@@ -40,7 +40,7 @@ pub struct SessionPath {
 impl SessionPath {
     fn try_new(lua: &Lua) -> LuaResult<Self> {
         let data_path = api::builtin_fn::stdpath(lua, "data")?;
-        let plugin_path = format!("{}/plugins/{}", data_path, PLUGIN_NAME);
+        let plugin_path = format!("{data_path}/{ROOT_PLUGINS_NAME}/{PLUGIN_NAME}");
         let database_path = format!("{plugin_path}/sqlite.db");
         Ok(Self {
             plugin: plugin_path,
@@ -54,32 +54,25 @@ impl<'lua> Session<'lua> {
         // 创建插件数据目录
         fs::create_dir_all(self.path.as_str())?;
         let conn = self.connect_database()?;
-        let table_create_sql = r#"
-          CREATE TABLE IF NOT EXISTS session (
+        let table_create_sql = format!(
+            r#"
+          CREATE TABLE IF NOT EXISTS {PLUGIN_NAME} (
             -- workspace path
             path TEXT PRIMARY KEY,
             -- session data path
             data TEXT NOT NULL UNIQUE
-          )"#;
-        conn.execute(table_create_sql, ())
+          );"#
+        );
+        conn.execute(table_create_sql.as_str(), ())
             .map_err(|_| RuntimeError("session plugin exec sql failed!".to_string()))?;
         Ok(())
     }
 
     fn init_function(&self) -> LuaResult<()> {
         // 注册方法
-        self.plugin.set(
-            "make_session",
-            self.runtime.create_function(Session::make_session)?,
-        )?;
-        self.plugin.set(
-            "session_list",
-            self.runtime.create_function(Session::session_list)?,
-        )?;
-        self.plugin.set(
-            "clean_session",
-            self.runtime.create_function(Session::clean_session)?,
-        )?;
+        self.register_function("make_session", Session::make_session)?;
+        self.register_function("session_list", Session::session_list)?;
+        self.register_function("clean_session", Session::clean_session)?;
         Ok(())
     }
 
@@ -95,14 +88,16 @@ impl<'lua> Session<'lua> {
     fn query_session(lua: &Lua, workspace_path: &str) -> LuaResult<SessionData> {
         let session_path = SessionPath::try_new(lua)?;
         let conn = Self::_connect_database(session_path.database.as_str())?;
-        let query_sql = r#"
+        let query_sql = format!(
+            r#"
           SELECT
             *
-          FROM session
+          FROM {PLUGIN_NAME}
           WHERE path = ?1;
-        "#;
+        "#
+        );
         let session = conn
-            .query_one(query_sql, [workspace_path], |row| {
+            .query_one(query_sql.as_str(), [workspace_path], |row| {
                 Ok(SessionData {
                     path: row.get(0)?,
                     data: row.get(1)?,
@@ -140,13 +135,15 @@ impl<'lua> Session<'lua> {
     fn save_session(lua: &Lua, session: SessionData) -> LuaResult<()> {
         let session_path = SessionPath::try_new(lua)?;
         let conn = Self::_connect_database(session_path.database.as_str())?;
-        let update_sql = r#"
-          INSERT INTO session (path, data)
+        let update_sql = format!(
+            r#"
+          INSERT INTO {PLUGIN_NAME} (path, data)
           VALUES (?1, ?2);
           -- ON CONFLICT(path) DO UPDATE
           -- SET path = ?3, data = ?4;
-        "#;
-        conn.execute(update_sql, (&session.path, &session.data))
+        "#
+        );
+        conn.execute(update_sql.as_str(), (&session.path, &session.data))
             .map_err(|_| RuntimeError("session plugin save session failed!".to_string()))?;
         Ok(())
     }
@@ -164,7 +161,7 @@ impl<'lua> Session<'lua> {
         let session_path = SessionPath::try_new(lua)?;
         let conn = Self::_connect_database(session_path.database.as_str())?;
         let mut stmt = conn
-            .prepare("SELECT * FROM session;")
+            .prepare(format!("SELECT * FROM {PLUGIN_NAME};").as_str())
             .map_err(|_| RuntimeError("session plugin sql prepare failed!".to_string()))?;
         Ok(stmt
             .query_map([], |row| {
@@ -195,7 +192,7 @@ impl<'lua> Session<'lua> {
         if fs_not_exists.len() > 0 {
             let clean_sql = format!(
                 r#"
-              DELETE FROM session
+              DELETE FROM {PLUGIN_NAME}
               WHERE path IN ({});
             "#,
                 fs_not_exists
@@ -254,8 +251,8 @@ impl<'lua> Plugin<'lua> for Session<'lua> {
         self.name
     }
 
-    fn plugin(&self) -> LuaTable {
-        self.plugin.clone()
+    fn plugin(&self) -> &LuaTable {
+        &(self.plugin)
     }
 
     fn runtime(&self) -> &'lua Lua {

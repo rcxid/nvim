@@ -1,6 +1,7 @@
 use mlua::prelude::*;
+use mlua::MaybeSend;
 
-const PLUGINS_NAME: &str = "plugins";
+pub const ROOT_PLUGINS_NAME: &str = "plugins";
 const _1K_BYTE: f64 = 1024.0;
 const _1M_BYTE: f64 = 1024.0 * _1K_BYTE;
 const _1G_BYTE: f64 = 1024.0 * _1M_BYTE;
@@ -15,15 +16,18 @@ pub trait Plugin<'lua> {
     /// plugin name
     fn name(&self) -> &str;
     /// plugin table
-    fn plugin(&self) -> LuaTable;
+    fn plugin(&self) -> &LuaTable;
     /// lua runtime
     fn runtime(&self) -> &'lua Lua;
-    /// 注册插件
-    fn register(&self) -> LuaResult<()> {
-        self.init()?;
-        let globals = self.runtime().globals();
-        globals.set(self.name(), self.plugin())?;
-        Ok(())
+    /// 注册方法
+    fn register_function<F, A, R>(&self, name: &str, func: F) -> LuaResult<()>
+    where
+        F: Fn(&Lua, A) -> LuaResult<R> + MaybeSend + 'static,
+        A: FromLuaMulti,
+        R: IntoLuaMulti,
+    {
+        self.plugin()
+            .set(name, self.runtime().create_function(func)?)
     }
 }
 
@@ -50,6 +54,29 @@ impl<'lua> RootPlugin<'lua> {
             used_memory_format
         ))
     }
+
+    fn gc_collect(lua: &Lua, (): ()) -> LuaResult<()> {
+        lua.gc_collect()
+    }
+
+    /// 注册插件为全局插件
+    pub fn register_to_global(&self) -> LuaResult<()> {
+        self.init()?;
+        let globals = self.runtime().globals();
+        globals.set(self.name(), self.plugin())?;
+        Ok(())
+    }
+
+    /// 注册插件
+    pub fn register<P>(&self, child_plugin: P) -> LuaResult<()>
+    where
+        P: Plugin<'lua>,
+    {
+        child_plugin.init()?;
+        self.plugin()
+            .set(child_plugin.name(), child_plugin.plugin())?;
+        Ok(())
+    }
 }
 
 impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
@@ -57,24 +84,15 @@ impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
 
     fn try_new(lua: &'lua Lua) -> LuaResult<Self::Instance> {
         Ok(RootPlugin {
-            name: PLUGINS_NAME,
+            name: ROOT_PLUGINS_NAME,
             plugin: lua.create_table()?,
             runtime: lua,
         })
     }
 
     fn init(&self) -> LuaResult<()> {
-        self.plugin.set(
-            "used_memory",
-            self.runtime.create_function(RootPlugin::used_memory)?,
-        )?;
-        self.plugin.set(
-            "gc_collect",
-            self.runtime.create_function(|lua, (): ()| {
-                lua.gc_collect()?;
-                Ok(())
-            })?,
-        )?;
+        self.register_function("used_memory", RootPlugin::used_memory)?;
+        self.register_function("gc_collect", RootPlugin::gc_collect)?;
         Ok(())
     }
 
@@ -82,8 +100,8 @@ impl<'lua> Plugin<'lua> for RootPlugin<'lua> {
         self.name
     }
 
-    fn plugin(&self) -> LuaTable {
-        self.plugin.clone()
+    fn plugin(&self) -> &LuaTable {
+        &(self.plugin)
     }
 
     fn runtime(&self) -> &'lua Lua {

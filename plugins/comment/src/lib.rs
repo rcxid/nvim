@@ -1,8 +1,7 @@
 use mlua::prelude::*;
 use nvim_oxi::api::opts::SetKeymapOpts;
 use nvim_oxi::api::types::Mode;
-
-use plugin::Plugin;
+use plugin::{Plugin, ROOT_PLUGINS_NAME};
 
 mod config;
 
@@ -27,27 +26,27 @@ impl<'lua> Plugin<'lua> for Comment<'lua> {
     fn init(&self) -> LuaResult<()> {
         let comment_line_func_name = "comment_line_toggle";
         let comment_multiline_func_name = "comment_multiline_toggle";
-        self.plugin.set(
-            comment_line_func_name,
-            self.runtime.create_function(comment_line_toggle_export)?,
-        )?;
-        self.plugin.set(
-            comment_multiline_func_name,
-            self.runtime
-                .create_function(comment_multiline_toggle_export)?,
-        )?;
+        self.register_function(comment_line_func_name, comment_line_toggle_export)?;
+        self.register_function(comment_multiline_func_name, comment_multiline_toggle_export)?;
         let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
         let _ = nvim_oxi::api::set_keymap(
             Mode::Normal,
             "<C-g>",
-            format!(r#":lua {}.{}()<CR>"#, self.name(), comment_line_func_name).as_str(),
+            format!(
+                r#":lua {}.{}.{}()<CR>"#,
+                ROOT_PLUGINS_NAME,
+                self.name(),
+                comment_line_func_name
+            )
+            .as_str(),
             &opts,
         );
         let _ = nvim_oxi::api::set_keymap(
             Mode::VisualSelect,
             "<C-g>",
             format!(
-                r#":lua {}.{}()<CR>"#,
+                r#":lua {}.{}.{}()<CR>"#,
+                ROOT_PLUGINS_NAME,
                 self.name(),
                 comment_multiline_func_name
             )
@@ -61,8 +60,8 @@ impl<'lua> Plugin<'lua> for Comment<'lua> {
         self.name
     }
 
-    fn plugin(&self) -> LuaTable {
-        self.plugin.clone()
+    fn plugin(&self) -> &LuaTable {
+        &(self.plugin)
     }
 
     fn runtime(&self) -> &'lua Lua {

@@ -27,8 +27,8 @@ impl<'lua> Plugin<'lua> for CratesPlugin<'lua> {
         self.name
     }
 
-    fn plugin(&self) -> LuaTable {
-        self.plugin.clone()
+    fn plugin(&self) -> &LuaTable {
+        &(self.plugin)
     }
 
     fn runtime(&self) -> &'lua Lua {
