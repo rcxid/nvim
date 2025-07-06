@@ -521,6 +521,8 @@ dependencies = [
  "mlua",
  "plugin",
  "rusqlite",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

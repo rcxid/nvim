@@ -1,11 +1,12 @@
 use mlua::prelude::{LuaResult, LuaTable};
 use mlua::Error::RuntimeError;
-use mlua::{IntoLua, Lua, Value};
+use mlua::{Lua, LuaSerdeExt};
 use plugin::{Plugin, ROOT_PLUGINS_NAME};
 use rusqlite::Connection;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
+use serde::{Deserialize, Serialize};
 
 const PLUGIN_NAME: &str = "session";
 
@@ -18,18 +19,10 @@ pub struct Session<'lua> {
     database: String,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct SessionData {
     path: String,
     data: String,
-}
-
-impl IntoLua for SessionData {
-    fn into_lua(self, lua: &Lua) -> LuaResult<Value> {
-        let table = lua.create_table()?;
-        table.set("path", self.path)?;
-        table.set("data", self.data)?;
-        Ok(Value::Table(table))
-    }
 }
 
 pub struct SessionPath {
@@ -152,7 +145,7 @@ impl<'lua> Session<'lua> {
         let list = Self::_session_list(lua)?;
         let table = lua.create_table()?;
         for (index, data) in list.into_iter().enumerate() {
-            table.set(index + 1, data)?;
+            table.set(index + 1, lua.to_value(&data)?)?;
         }
         Ok(table)
     }
