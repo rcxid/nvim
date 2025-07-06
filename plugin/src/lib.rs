@@ -1,5 +1,5 @@
-use mlua::prelude::*;
 use mlua::MaybeSend;
+use mlua::prelude::*;
 
 pub const ROOT_PLUGINS_NAME: &str = "plugins";
 const _1K_BYTE: f64 = 1024.0;
@@ -28,6 +28,17 @@ pub trait Plugin<'lua> {
     {
         self.plugin()
             .set(name, self.runtime().create_function(func)?)
+    }
+    /// 注册异步方法
+    fn register_async_function<F, A, FR, R>(&self, name: &str, func: F) -> LuaResult<()>
+    where
+        F: Fn(Lua, A) -> FR + MaybeSend + 'static,
+        A: FromLuaMulti,
+        FR: Future<Output = LuaResult<R>> + MaybeSend + 'static,
+        R: IntoLuaMulti,
+    {
+        self.plugin()
+            .set(name, self.runtime().create_async_function(func)?)
     }
 }
 
